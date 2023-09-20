@@ -1,0 +1,7 @@
+services:
+    server:
+        build: .
+        volumes:
+            - type: volume
+              source: nd_data
+              target: /nd_data/
