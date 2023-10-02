@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "TVKST6FEqtb9CTUzCc76ZCqjTEcwzLhSPafRHoZefMs=",
+  "Source": "NexusServer",
+  "BasePath": "_content/NexusServer",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
