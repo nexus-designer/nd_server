@@ -19,8 +19,8 @@ namespace NexusServer.Data
         public bool fromBot { get; set; }
         [Required]
         public string content { get; set; }
-        [Required, MaxLength(32)]
-        public char media { get; set; }
+        [MaxLength(32)]
+        public string? media { get; set; }
 
     }
 }

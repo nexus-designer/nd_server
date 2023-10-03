@@ -11,7 +11,6 @@ namespace NexusServer.Interfaces
         {
             _context = context;
         }
-
         public User GetUserByEmail(string email)
         {
             return _context.Users.FirstOrDefault(u => u.email == email);
@@ -49,7 +48,6 @@ namespace NexusServer.Interfaces
             // Authentication successful
             return user;
         }
-
         public void SaveSessionToken(string email, string sessionToken)
         {
             var user = _context.Users.SingleOrDefault(u => u.email == email);
@@ -67,27 +65,34 @@ namespace NexusServer.Interfaces
             _context.Conversations.Add(conversation);
             _context.SaveChanges();
         }
-        public List<Conversation> GetAllConversations(string sessionToken)
+        public List<Conversation> GetAllConversations(long userid)
         {
-            var user = _context.Users.FirstOrDefault(u => u.sessionToken == sessionToken);
-            var conversations = _context.Conversations.Where(c => c.userId == user.id).ToList();
+            var conversations = _context.Conversations.Where(c => c.userId == userid).ToList();
             return conversations;
         }
-        public Conversation GetConversationById(long conversationId)
+        public Conversation GetConversationById(long conversationId, long userId)
         {
-            var conversation = _context.Conversations.FirstOrDefault(c => c.id == conversationId);
+            var conversation = _context.Conversations.FirstOrDefault(c => c.id == conversationId && c.userId == userId);
             return conversation;
         }
-        public Conversation UpdateConversation(string title, long id)
+        public Conversation UpdateConversation(string title, long id, long userid)
         {
-            var conversation = _context.Conversations.FirstOrDefault(c => c.id == id);
+            var conversation = _context.Conversations.FirstOrDefault(c => c.id == id && c.userId == userid);
+            if (conversation == null)
+            {
+                return null;
+            }
             conversation.title = title;
             _context.SaveChanges();
             return conversation;
         }
-        public Conversation DeleteConversation(long id)
+        public Conversation DeleteConversation(long id, long userId)
         {
-            var conversation = _context.Conversations.FirstOrDefault(c => c.id == id);
+            var conversation = _context.Conversations.FirstOrDefault(c => c.id == id && c.userId == userId);
+            if (conversation == null)
+            {
+                return null;
+            }
             _context.Conversations.Remove(conversation);
             _context.SaveChanges();
             return conversation;
@@ -102,10 +107,40 @@ namespace NexusServer.Interfaces
             var message = _context.Msgs.FirstOrDefault(m => m.index == index && m.conversationId == conversationId);
             return message;
         }
-        public Msg DeleteMessage(long id,int index)
+        public Msg DeleteMessage(long id, int index)
         {
-            var msg = _context.Msgs.FirstOrDefault(c => c.conversationId == id && c.index == index);
+            var msg = _context.Msgs.FirstOrDefault(m => m.conversationId == id && m.index == index);
+            if (msg == null)
+            {
+                return null;
+            }
             _context.Msgs.Remove(msg);
+            _context.SaveChanges();
+            return msg;
+        }
+        public Msg AppendMessage(long id, string content)
+        {
+            var count = _context.Msgs.Where(m => m.conversationId == id).Count();
+            var msg = new Msg()
+            {
+                conversationId = id,
+                index = count + 1,
+                fromBot = false,
+                content = content,
+                
+            };
+            _context.Msgs.Add(msg);
+            _context.SaveChanges();
+            return msg;
+        }
+        public Msg UpdateMessage(long id, int index, string content)
+        {
+            var msg = _context.Msgs.FirstOrDefault(m => m.conversationId == id && m.index == index);
+            if (msg == null)
+            {
+                return null; 
+            }
+            msg.content = content;
             _context.SaveChanges();
             return msg;
         }

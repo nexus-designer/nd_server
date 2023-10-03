@@ -15,6 +15,7 @@ namespace NexusServer.Data
         public string title { get; set; }
         [Required]
         public bool waiting { get; set; }
+        public DateTimeOffset createdOn { get; set; }
 
     }
 }

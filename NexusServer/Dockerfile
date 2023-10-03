@@ -3,6 +3,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 EXPOSE 80
+EXPOSE 44338
 EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
@@ -13,10 +14,10 @@ COPY . .
 WORKDIR "/src/NexusServer"
 RUN dotnet build "NexusServer.csproj" -c Release -o /app/build
 
-FROM build AS publish
+FROM build AS dev
 RUN dotnet publish "NexusServer.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM base AS final
+FROM base AS prod
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "NexusServer.dll"]

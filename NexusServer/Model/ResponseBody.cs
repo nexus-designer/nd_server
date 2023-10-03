@@ -16,8 +16,8 @@
         public long id { get; set; }
         public long userId { get; set; }
         public string title { get; set; }
-
         public bool waiting { get; set; }
+        public DateTimeOffset createdOn { get; set; }
     }
 
 }

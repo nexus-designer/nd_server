@@ -11,10 +11,7 @@ builder.Services.AddDbContext<DataContext>(
             );
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<DataMethods<Msg>>();
-builder.Services.AddScoped<DataMethods<User>>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped(typeof(IDataMethods<>), typeof(DataMethods<>));
 builder.Services.AddScoped<IHelper,Helper>();
 var app = builder.Build();
 

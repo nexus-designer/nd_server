@@ -22,5 +22,10 @@
     { 
         public string title { get; set; }
     }
+    public class AppendMessageRequest
+    {
+        public string content { get; set; }
+    }
+
 
 }
