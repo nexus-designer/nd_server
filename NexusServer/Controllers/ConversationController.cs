@@ -21,10 +21,12 @@ namespace NexusServer.Controllers
     {
         private readonly IUserRepository _userRepository;
         private IHelper _helper;
-        public ConversationController(IUserRepository userRepository, IHelper helper)
+        private readonly ILogger<AuthenticationController> _logger;
+        public ConversationController(IUserRepository userRepository, IHelper helper, ILogger<AuthenticationController> logger)
         {
             _userRepository = userRepository;
             _helper = helper;
+            _logger = logger;
         }
         
         
@@ -36,11 +38,25 @@ namespace NexusServer.Controllers
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if(user == null)
                 {
-                    return StatusCode(400,"User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400,errorBody);
                 }   
                 if (string.IsNullOrEmpty(request.title))
                 {
-                    return BadRequest("Title is required.");
+                    _logger.LogInformation("Title is required");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 100,
+                        errormessage = "Invalid Inputs"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var conversation = new Conversation
                 {
@@ -48,9 +64,9 @@ namespace NexusServer.Controllers
                     title = request.title,
                     waiting = false,
                 };
-                // Save the user to the database
+
                 _userRepository.CreateConversation(conversation);
-                // Return a success response 
+
                 var response = new ConversationResponse
                 {
                     id = conversation.id,
@@ -64,54 +80,95 @@ namespace NexusServer.Controllers
             }
             catch (Exception ex)
             {
-                // Handle exceptions as needed
-                return StatusCode(500,ex.Message);
+                _logger.LogError(ex, "An error occurred during CreateConversation: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
 
         }
 
          
         [HttpGet("")]
-        public async Task<IActionResult> Conversations([FromHeaderAttribute(Name = "sessionToken")] string sessionToken)
+        public async Task<IActionResult> Conversations([FromHeader(Name = "sessionToken")] string sessionToken)
         {
             try
             {
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var conversation = _userRepository.GetAllConversations(user.id);
                 if(conversation == null)
                 {
-                    return StatusCode(400, "Conversation not found");
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
-                return Ok(conversation); // 201 Created
+                _logger.LogInformation("Conversations listed successfully");
+                return Ok(conversation);
             }
             catch(Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during Conversations: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
 
         }
 
          
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetConversationDetails(int id, [FromHeaderAttribute(Name = "sessionToken")] string sessionToken)
+        public async Task<IActionResult> GetConversationDetails(int id, [FromHeader(Name = "sessionToken")] string sessionToken)
         {
             try 
             {
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
-                // Call your repository or service to fetch conversation details by id
                 var conversation = _userRepository.GetConversationById(id,user.id);
 
                 if (conversation == null)
                 {
-                    return StatusCode(400, "Conversation not found"); // Return a 404 Not Found response if the conversation is not found
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var response = new Conversation
                 {
@@ -126,7 +183,14 @@ namespace NexusServer.Controllers
             }
             catch(Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during GetConversationDetails: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
         }
         
@@ -139,12 +203,26 @@ namespace NexusServer.Controllers
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var conversation = _userRepository.UpdateConversation(request.title, id,user.id);
                 if (conversation == null)
                 {
-                    return StatusCode(400, "Conversation not found");
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var response = new Conversation
                 {
@@ -159,26 +237,47 @@ namespace NexusServer.Controllers
             }
             catch (Exception ex) 
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during UpdateConversationDetails: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
 
         }
 
         
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteConversationDetails(int id, [FromHeaderAttribute(Name = "sessionToken")] string sessionToken)
+        public async Task<IActionResult> DeleteConversationDetails(int id, [FromHeader(Name = "sessionToken")] string sessionToken)
         {
             try
             {
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var deleteconversation = _userRepository.DeleteConversation(id,user.id);
                 if (deleteconversation == null)
                 {
-                    return StatusCode(400, "Conversation not found");
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var response = new Conversation
                 {
@@ -193,59 +292,116 @@ namespace NexusServer.Controllers
             }
             catch(Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during DeleteConversationDetails: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
 
         }
 
         
         [HttpGet("{id}/msg")]
-        public async Task<IActionResult> GetMessagesForConversation(int id, [FromHeaderAttribute(Name = "sessionToken")] string sessionToken)
+        public async Task<IActionResult> GetMessagesForConversation(int id, [FromHeader(Name = "sessionToken")] string sessionToken)
         {
             try
             {
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 if (_userRepository.GetConversationById(id,user.id) == null)
                 {
-                    return StatusCode(400, "Conversation not found");
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var message = _userRepository.GetMessageByCoversationId(id);
                 if(message == null)
                 {
-                    return StatusCode(400, "Message not found");
+                    _logger.LogInformation("Message not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 103,
+                        errormessage = "Message not found"
+                    };
+                    return StatusCode(400, errorBody);
+  
                 }   
                 return Ok(new { msgs = message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during GetMessagesForConversation: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
         }
 
         
         [HttpGet("{id}/msg/{index}")]
-        public async Task<IActionResult> ReadingConversationMessages(int id,int index, [FromHeaderAttribute(Name = "sessionToken")] string sessionToken)
+        public async Task<IActionResult> ReadingConversationMessages(int id,int index, [FromHeader(Name = "sessionToken")] string sessionToken)
         {
             try
             {
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 if (_userRepository.GetConversationById(id,user.id) == null || _userRepository.GetMessageByCoversationId(id) ==null)
                 {
-                    return NotFound();
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
 
                 var message = _userRepository.ReadingMessageByIndex(index,id);
                 if(message == null)
                 {
-                    return StatusCode(400, "Message not found.");
+                    _logger.LogInformation("Message not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 103,
+                        errormessage = "Message not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
 
 
@@ -253,24 +409,45 @@ namespace NexusServer.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during ReadingConversationMessages: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
         }
 
         
         [HttpPost("{id}/msg")]
-        public IActionResult AppendingMessages(int id, AppendMessageRequest request, [FromHeaderAttribute(Name = "sessionToken")] string sessionToken)
+        public IActionResult AppendingMessages(int id, AppendMessageRequest request, [FromHeader(Name = "sessionToken")] string sessionToken)
         {
             try
             {
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 if (_userRepository.GetConversationById(id,user.id) == null)
                 {
-                    return NotFound();
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
 
                 var msg = _userRepository.AppendMessage(id,request.content);
@@ -279,61 +456,125 @@ namespace NexusServer.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during AppendingMessages: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
         }
 
         
         [HttpPost("{id}/msg/{index}")]
-        public IActionResult UpdateMessages(int id,int index,AppendMessageRequest request, [FromHeaderAttribute(Name = "sessionToken")] string sessionToken)
+        public IActionResult UpdateMessages(int id,int index,AppendMessageRequest request, [FromHeader(Name = "sessionToken")] string sessionToken)
         {
             try
             {
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 if (_userRepository.GetConversationById(id, user.id) == null)
                 {
-                    return NotFound();
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var msg = _userRepository.UpdateMessage(id,index, request.content);
                 if(msg == null)
                 {
-                    return StatusCode(400, "Message not found");
+                    _logger.LogInformation("Message not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 103,
+                        errormessage = "Message not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 return Ok(msg);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during UpdateMessages: {ErrorMessage}", ex.Message);    
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
         }
         
         [HttpDelete("{id}/msg/{index}")]
-        public async Task<IActionResult> DeleteMessageDetails(int id,int index, [FromHeaderAttribute(Name = "sessionToken")] string sessionToken)
+        public async Task<IActionResult> DeleteMessageDetails(int id,int index, [FromHeader(Name = "sessionToken")] string sessionToken)
         {
             try
             {
                 var user = _userRepository.GetUserBySessionToken(sessionToken);
                 if (user == null)
                 {
-                    return StatusCode(400, "User not found");
+                    _logger.LogInformation("User not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 101,
+                        errormessage = "User not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 var conversation = _userRepository.GetConversationById(id,user.id);
                 if (conversation == null)
                 {
-                    return StatusCode(400, "Conversation not found");
+                    _logger.LogInformation("Conversation not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 102,
+                        errormessage = "Conversation not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
                 if (conversation.waiting == true)
                 {
-                    return StatusCode(400, "Conversation is waiting");
+                    _logger.LogInformation("Conversation is waiting");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 104,
+                        errormessage = "Conversation is waiting"
+                    };
+                    return StatusCode(400, errorBody);
+
                 }
                 var deletemsg = _userRepository.DeleteMessage(id,index);
                 if(deletemsg == null)
                 {
-                    return StatusCode(400, "Message not found");
+                    _logger.LogInformation("Message not found");
+                    var errorBody = new ErrorBody
+                    {
+                        statuscode = 400,
+                        errorcode = 103,
+                        errormessage = "Message not found"
+                    };
+                    return StatusCode(400, errorBody);
                 }
 
                 var response = new Msg
@@ -351,7 +592,14 @@ namespace NexusServer.Controllers
             }
             catch(Exception ex)            
             {
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "An error occurred during DeleteMessageDetails: {ErrorMessage}", ex.Message);
+                var errorBody = new ErrorBody
+                {
+                    statuscode = 500,
+                    errorcode = 107,
+                    errormessage = "Contact System Admin for more information"
+                };
+                return StatusCode(500, errorBody);
             }
             
         }
